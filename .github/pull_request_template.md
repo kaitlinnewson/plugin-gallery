@@ -11,7 +11,8 @@ Plugins must be secure, follow PKP's coding conventions
 transparent about what they do with users' data.
 
 This template is required. Fill in every section unless it says otherwise, and
-check every box in the checklist.
+check every box in the checklist. An automated check makes sure the template is
+complete, and runs again whenever you edit the description.
 
 To check a box, replace [ ] with [x], or click the box after you create the
 pull request. Do not check a box unless it is true.
