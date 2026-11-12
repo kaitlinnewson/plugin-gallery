@@ -1,0 +1,118 @@
+name: pull-request-template
+
+# Checks that the pull request description uses the pull request template and
+# that it has been filled in. Re-runs when the description is edited, so
+# contributors can fix it without pushing a new commit.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  check-template:
+    runs-on: ubuntu-latest
+    # Skip pull requests from members of the PKP organization. Forks are not
+    # skipped, so the check can be tested there.
+    if: ${{ !(github.repository_owner == 'pkp' && contains(fromJSON('["OWNER", "MEMBER"]'), github.event.pull_request.author_association)) }}
+    steps:
+      - name: Check the pull request description
+        env:
+          # Pass the description in an environment variable. Never insert it
+          # into the script directly, as it is written by the contributor.
+          PR_BODY: ${{ github.event.pull_request.body }}
+        shell: python
+        run: |
+          import os
+          import re
+
+          body = os.environ.get('PR_BODY') or ''
+          # Ignore the template's instructions and anything else in comments
+          body = re.sub(r'<!--.*?-->', '', body, flags=re.DOTALL)
+          body = body.replace('\r\n', '\n')
+
+          errors = []
+
+          # Split the description into its "## " sections
+          sections = {}
+          current = None
+          for line in body.split('\n'):
+              heading = re.match(r'^##\s+(.+?)\s*$', line)
+              if heading:
+                  current = heading.group(1)
+                  sections[current] = []
+              elif current:
+                  sections[current].append(line)
+
+          required = ['Plugin', 'Releases', 'External services and data', 'AI use', 'Checklist']
+          missing = [name for name in required if name not in sections]
+          if missing:
+              errors.append('The pull request template is missing or incomplete. Missing sections: ' + ', '.join(missing) + '.')
+          else:
+              # Required fields in the "Plugin" section
+              for field in ['Plugin name', 'Source code repository', 'License']:
+                  match = re.search(r'\*\*' + re.escape(field) + r':\*\*[ \t]*(.*)', '\n'.join(sections['Plugin']))
+                  if not match or not match.group(1).strip():
+                      errors.append(f'Fill in "{field}" in the Plugin section.')
+
+              # Make text readable in error messages
+              def plain(text):
+                  text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+                  text = text.replace('**', '').replace('`', '').replace('(check one)', '')
+                  return text.strip().rstrip(':').strip()
+
+              # Group consecutive checkboxes under the line that comes before them
+              def checkbox_groups(lines):
+                  groups = []
+                  label = ''
+                  group = None
+                  for line in lines:
+                      box = re.match(r'^\s*[-*]\s+\[([ xX])\]\s*(.*)', line)
+                      if box:
+                          if group is None:
+                              group = {'label': label, 'items': []}
+                              groups.append(group)
+                          group['items'].append((box.group(1).lower() == 'x', plain(box.group(2))))
+                      else:
+                          if line.strip():
+                              label = plain(line)
+                          group = None
+                  return groups
+
+              # Each question outside the checklist needs exactly one answer
+              new_plugin = False
+              for name, lines in sections.items():
+                  if name == 'Checklist':
+                      continue
+                  for group in checkbox_groups(lines):
+                      checked = [text for is_checked, text in group['items'] if is_checked]
+                      if len(checked) != 1:
+                          errors.append(f'Check exactly one box for "{group["label"]}" ({len(checked)} checked).')
+                      if any(text.startswith('New plugin') for text in checked):
+                          new_plugin = True
+
+              # Every checklist item must be checked
+              for group in checkbox_groups(sections['Checklist']):
+                  for is_checked, text in group['items']:
+                      if not is_checked:
+                          errors.append(f'Checklist item not checked: "{text}"')
+
+              # Sections that need a written answer
+              if not '\n'.join(sections['Releases']).strip():
+                  errors.append('Describe each release in the Releases section.')
+              if new_plugin and not '\n'.join(sections.get('About the plugin', [])).strip():
+                  errors.append('Describe what the plugin does in the "About the plugin" section.')
+
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              if errors:
+                  summary.write('## Pull request template\n\nPlease edit the pull request description to fix the following. This check runs again when you save the description.\n\n')
+                  summary.write(''.join(f'- {error}\n' for error in errors))
+              else:
+                  summary.write('## Pull request template\n\nThe pull request template has been filled in.\n')
+
+          for error in errors:
+              print(f'::error::{error}')
+          if errors:
+              raise SystemExit(1)

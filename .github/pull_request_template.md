@@ -10,6 +10,13 @@ Plugins must be secure, follow PKP's coding conventions
 (https://docs.pkp.sfu.ca/dev/documentation/en/), support translation, and be
 transparent about what they do with users' data.
 
+This template is required. Fill in every section unless it says otherwise, and
+check every box in the checklist. An automated check makes sure the template is
+complete, and runs again whenever you edit the description.
+
+To check a box, replace [ ] with [x], or click the box after you create the
+pull request. Do not check a box unless it is true.
+
 Pull requests that do not complete this template, or do not answer it
 truthfully, may be closed without review. A plugin that is later found to have
 security issues, or that does not behave as described here, may be removed.
@@ -30,7 +37,7 @@ security issues, or that does not behave as described here, may be removed.
 
 ## About the plugin
 
-<!-- New plugins only. What does the plugin do, and who is it for? If a plugin in the gallery or a feature of the application already does something similar, how is this one different? -->
+<!-- New plugins only. What does the plugin do, and who is it for? If a plugin in the gallery or a feature of the application already does something similar, how is this one different? If you can, add screenshots or a short screencast of the plugin in use, especially if it needs an account with an external service. -->
 
 ## Releases
 
@@ -53,7 +60,7 @@ Does the plugin require an account, subscription or payment with a third party? 
 Did you use AI tools to write the plugin code or this pull request? See [PKP's policy on AI contributions](https://pkp.sfu.ca/pkp-policy-ai/). (check one)
 
 - [ ] No
-- [ ] Yes. Describe how:
+- [ ] Yes. Describe how, and how you reviewed and tested the result:
 
 ## Checklist
 
@@ -63,5 +70,6 @@ Did you use AI tools to write the plugin code or this pull request? See [PKP's p
 - [ ] The README describes what the plugin does, its requirements, how to configure it, and any data it sends outside the installation.
 - [ ] Handlers and API endpoints check the user's role and access to the objects they request, and template output is escaped.
 - [ ] The repository has a private way to report security issues, such as [GitHub's private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository).
+- [ ] I will respond to review comments myself, and will not post AI-generated responses or fixes without reviewing and testing them.
 
-## Anything else reviewers should know
+## Anything else reviewers should know (optional)
